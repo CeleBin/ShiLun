@@ -24,10 +24,11 @@ with sync_playwright() as p:
     page.wait_for_load_state('networkidle')
     expect(page).to_have_title('ShiLun · 今天吃什么')
     expect(page.get_by_role('heading', name='今天吃什么？')).to_be_visible()
-    expect(page.locator('.menu-chip')).to_have_count(8)
-    assert page.locator('.video-card').count() == 3
+    expect(page.locator('.menu-chip')).to_have_count(0)
+    expect(page.get_by_role('button', name='先添加想吃的吧', exact=True)).to_be_disabled()
+    expect(page.locator('.video-card')).to_have_count(6)
     page.screenshot(path=str(output / 'shilun-desktop.png'), full_page=True)
-    checks.append('initial default menu, title and three curated videos')
+    checks.append('initial empty menu, title and six curated videos')
 
     menu_input = page.get_by_role('textbox', name='想吃什么', exact=True)
     add = page.get_by_role('button', name='添加', exact=True)
@@ -47,13 +48,15 @@ with sync_playwright() as p:
     expect(page.locator('#menu-feedback')).to_contain_text('先写一个')
     menu_input.fill('牛肉面')
     add.click()
+    menu_input.fill('牛肉面')
+    add.click()
     expect(page.locator('#menu-feedback')).to_contain_text('已经在转盘')
     menu_input.fill('面' * 17)
     add.click()
     expect(page.locator('#menu-feedback')).to_contain_text('16 个字')
     checks.append('empty, duplicate and oversized names rejected')
 
-    for i in range(8):
+    for i in range(15):
         menu_input.fill(f'新选择{i}')
         add.click()
     expect(page.locator('.menu-chip')).to_have_count(16)
@@ -121,7 +124,7 @@ with sync_playwright() as p:
     for width in [375, 768, 1440]:
         page.set_viewport_size({'width': width, 'height': 900})
         assert not page.evaluate('document.documentElement.scrollWidth > innerWidth'), width
-        expect(page.get_by_role('button', name='转一下，开饭！', exact=True)).to_be_visible()
+        expect(page.get_by_role('button', name='先添加想吃的吧', exact=True)).to_be_disabled()
         if width == 375:
             page.screenshot(path=str(output / 'shilun-mobile.png'), full_page=True)
         if width == 768:
@@ -131,8 +134,8 @@ with sync_playwright() as p:
     page.evaluate('(key) => localStorage.setItem(key, "{")', KEY)
     page.reload()
     expect(page.locator('.storage-warning')).to_contain_text('无法读取')
-    expect(page.locator('.menu-chip')).to_have_count(8)
-    checks.append('corrupt persisted data recovers to usable defaults')
+    expect(page.locator('.menu-chip')).to_have_count(0)
+    checks.append('corrupt persisted data recovers to an empty menu')
 
     page.evaluate('(key) => localStorage.setItem(key, JSON.stringify({version:1, items:["保留的饭"], history:"broken"}))', KEY)
     page.reload()
@@ -170,6 +173,8 @@ with sync_playwright() as p:
     quota_page.goto(args.url)
     quota_page.wait_for_load_state('networkidle')
     expect(quota_page.locator('.storage-warning')).to_contain_text('暂时无法记住')
+    quota_page.get_by_role('textbox', name='想吃什么', exact=True).fill('临时的饭')
+    quota_page.get_by_role('button', name='添加', exact=True).click()
     expect(quota_page.get_by_role('button', name='转一下，开饭！', exact=True)).to_be_enabled()
     quota.close()
     checks.append('storage quota failure: clear warning and usable page')

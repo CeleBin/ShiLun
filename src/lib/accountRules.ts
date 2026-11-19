@@ -1,6 +1,6 @@
-import { characters } from './domain';
-import { normalizePreferenceTag, PREFERENCE_OPTIONS } from '../shared/contracts';
-import type { Command } from '../shared/contracts';
+import { characters } from './domain.js';
+import { normalizePreferenceTag, PREFERENCE_OPTIONS } from '../shared/contracts.js';
+import type { Command } from '../shared/contracts.js';
 export class AppError extends Error { constructor(public status: number, public code: string, message: string) { super(message); } }
 export const invalid = (message = '提交的数据不符合要求。'): never => { throw new AppError(400, 'INVALID_INPUT', message); };
 export function normalizeVideoUrl(raw: string) {

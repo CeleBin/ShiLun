@@ -1,5 +1,5 @@
-import { AppError } from '../src/lib/accountRules';
-import { classifyNearbyStore, type NearbyFood, type NearbyStore } from '../src/shared/nearbyFood';
+import { AppError } from '../src/lib/accountRules.js';
+import { classifyNearbyStore, type NearbyFood, type NearbyStore } from '../src/shared/nearbyFood.js';
 
 const radius = 2000;
 const pageSize = 25;

@@ -1,7 +1,6 @@
 export const STORAGE_KEY = 'shilun.wheel.v1';
 export const MAX_ITEMS = 16;
 export const MAX_NAME_LENGTH = 16;
-export const DEFAULT_ITEMS = ['番茄炒蛋', '牛肉面', '饺子', '咖喱饭', '麻辣烫', '寿司', '小炒肉', '汉堡'];
 
 export interface HistoryEntry { name: string; at: number }
 export interface SavedState { version: 1; items: string[]; history: HistoryEntry[] }
@@ -9,7 +8,7 @@ export interface Recovery { state: SavedState; warning: string; canSave: boolean
 const segmenter = new Intl.Segmenter('zh-CN', { granularity: 'grapheme' });
 export const characters = (name: string) => Array.from(segmenter.segment(name), (part) => part.segment);
 const validName = (value: unknown): value is string => typeof value === 'string' && value.trim() === value && value.length > 0 && characters(value).length <= MAX_NAME_LENGTH;
-export const defaultState = (): SavedState => ({ version: 1, items: [...DEFAULT_ITEMS], history: [] });
+export const defaultState = (): SavedState => ({ version: 1, items: [], history: [] });
 
 export function addItem(items: string[], input: string): { ok: true; items: string[] } | { ok: false; error: string } {
   const name = input.trim();
@@ -36,12 +35,12 @@ export function recoverState(raw: string | null): Recovery {
       return validName(item.name) && typeof item.at === 'number' && Number.isFinite(item.at) && item.at >= 0 && item.at <= 8640000000000000;
     }).slice(0, 8) : [];
     return {
-      state: { version: 1, items: itemsValid ? [...data.items as string[]] : [...DEFAULT_ITEMS], history },
+      state: { version: 1, items: itemsValid ? [...data.items as string[]] : fallback.state.items, history },
       warning: !itemsValid || !historyRecords || history.length < Math.min(historyRecords.length, 8) ? '部分浏览器记录无法读取，已恢复可用内容。' : '',
       canSave: true,
     };
   } catch {
-    return { ...fallback, warning: '之前的浏览器记录无法读取，已恢复默认选项。' };
+    return { ...fallback, warning: '之前的浏览器记录无法读取，可以重新添加选项。' };
   }
 }
 

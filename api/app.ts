@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'node:crypto';
-import { AppError } from '../src/lib/accountRules';
-import { recommend, STRATEGY } from '../src/lib/recommendation';
-import { authenticateIdentity, sameOrigin } from '../server/auth';
-import { RedisStore } from '../server/store';
-import { getBilibiliMetadata, getBilibiliTags } from '../server/bilibili';
-import { seedCatalog, Service } from '../server/service';
-import { RECOMMENDATION_EXCLUDE_LENGTH, RECOMMENDATION_EXCLUDE_LIMIT } from '../src/shared/contracts';
+import { AppError } from '../src/lib/accountRules.js';
+import { recommend, STRATEGY } from '../src/lib/recommendation.js';
+import { authenticateIdentity, sameOrigin } from '../server/auth.js';
+import { RedisStore } from '../server/store.js';
+import { getBilibiliMetadata, getBilibiliTags } from '../server/bilibili.js';
+import { seedCatalog, Service } from '../server/service.js';
+import { RECOMMENDATION_EXCLUDE_LENGTH, RECOMMENDATION_EXCLUDE_LIMIT } from '../src/shared/contracts.js';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Vary', 'Cookie'); res.setHeader('X-Content-Type-Options', 'nosniff');
   try {

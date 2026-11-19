@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { addItem, DEFAULT_ITEMS, defaultState, readState, saveState, targetRotation, uniformIndex, type Recovery } from './lib/domain';
+import { addItem, defaultState, readState, saveState, targetRotation, uniformIndex, type Recovery } from './lib/domain';
 import { sameWheel } from './lib/cloudWheel';
 import { ApiError } from './lib/api';
 import { Icon } from './components/Icons';
@@ -38,7 +38,7 @@ function Experience() {
   const cloud = useAccount(identity.userId, identity.getToken);
   const sendCommand = cloud.command;
   const [initial] = useState(loadBrowser);
-  const [items, setItems] = useState(identity.userId ? [...DEFAULT_ITEMS] : initial.state.items);
+  const [items, setItems] = useState<string[]>(identity.userId ? [] : initial.state.items);
   const [history, setHistory] = useState<Draw[]>(identity.userId ? [] : initial.state.history.map((entry, index) => ({ ...entry, id: `guest-${entry.at}-${index}` })));
   const [storageWarning, setStorageWarning] = useState(identity.userId ? '' : initial.warning);
   const [spinningNow, setSpinningNow] = useState(false);

@@ -1,6 +1,6 @@
-import type { HistoryEntry } from '../lib/domain';
-import type { Video } from '../data/videos';
-import { FOOD_GROUPS, type FoodGroup } from '../lib/foodGroups';
+import type { HistoryEntry } from '../lib/domain.js';
+import type { Video } from '../data/videos.js';
+import { FOOD_GROUPS, type FoodGroup } from '../lib/foodGroups.js';
 
 export const USERNAME_MAX_LENGTH = 24;
 export interface AuthIdentity {

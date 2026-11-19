@@ -1,5 +1,5 @@
-import { RECOMMENDATION_BATCH_SIZE, selectDurationPreferences, type CatalogVideo, type Recommendation } from '../shared/contracts';
-import { durationTag, foodGroupFor } from './videoPreferences';
+import { RECOMMENDATION_BATCH_SIZE, selectDurationPreferences, type CatalogVideo, type Recommendation } from '../shared/contracts.js';
+import { durationTag, foodGroupFor } from './videoPreferences.js';
 
 export const STRATEGY = 'behavior-tag-matches-v7';
 const DURATION_MATCH_BONUS = 2;

@@ -1,12 +1,11 @@
 import { randomUUID, createHash } from 'node:crypto';
-import { DEFAULT_ITEMS } from '../src/lib/domain';
-import { videos as seeds } from '../src/data/videos';
-import starterVideos from '../src/data/bilibili-starter.json';
-import { selectDurationPreferences, RECOMMENDATION_BATCH_SIZE, type Account, type AdminData, type CatalogVideo, type Command, type PreferenceUpdate, type RecommendationResult } from '../src/shared/contracts';
-import { AppError, normalizeVideoUrl, validateCommand } from '../src/lib/accountRules';
-import { recommend, STRATEGY } from '../src/lib/recommendation';
-import type { DocumentStore } from './store';
-import type { BilibiliMetadata } from './bilibili';
+import { videos as seeds } from '../src/data/videos.js';
+import starterVideos from '../src/data/bilibili-starter.json' with { type: 'json' };
+import { selectDurationPreferences, RECOMMENDATION_BATCH_SIZE, type Account, type AdminData, type CatalogVideo, type Command, type PreferenceUpdate, type RecommendationResult } from '../src/shared/contracts.js';
+import { AppError, normalizeVideoUrl, validateCommand } from '../src/lib/accountRules.js';
+import { recommend, STRATEGY } from '../src/lib/recommendation.js';
+import type { DocumentStore } from './store.js';
+import type { BilibiliMetadata } from './bilibili.js';
 
 const PREFIX = 'shilun:v2:';
 const GLOBAL = PREFIX + 'moderation';
@@ -24,7 +23,7 @@ export function seedCatalog(): CatalogVideo[] {
   }));
   return [...original, ...starter];
 }
-const newProfile = (): Profile => ({ wheel: { items: [...DEFAULT_ITEMS], history: [], revision: 0 }, favorites: [], preferences: [], interests: {}, events: [], requests: [], drawIds: {} });
+const newProfile = (): Profile => ({ wheel: { items: [], history: [], revision: 0 }, favorites: [], preferences: [], interests: {}, events: [], requests: [], drawIds: {} });
 const newModeration = (): Moderation => ({ videos: seedCatalog(), submissions: [], feedback: [], audit: [], operations: {} });
 const conflict = (message = '内容已在其他设备更新，请重新加载后比较。') => new AppError(409, 'CONFLICT', message);
 const capacity = () => new AppError(409, 'CAPACITY', '记录已达到容量上限，请联系维护者归档后再试。');

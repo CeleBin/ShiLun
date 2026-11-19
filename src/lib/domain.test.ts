@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addItem, DEFAULT_ITEMS, recoverState, serializeState, readState, saveState,
+  addItem, recoverState, serializeState, readState, saveState,
   uniformIndex, targetRotation, indexAtPointer, isBilibiliUrl, nextBatch,
   type SavedState,
 } from './domain';
@@ -24,14 +24,15 @@ describe('custom menu', () => {
 });
 
 describe('remember choices in this browser', () => {
-  it('round trips an explicitly empty menu rather than restoring defaults', () => {
+  it('starts with an empty menu and round trips an explicitly empty menu', () => {
     const state: SavedState = { version: 1, items: [], history: [] };
+    expect(recoverState(null).state).toEqual(state);
     expect(recoverState(serializeState(state)).state).toEqual(state);
   });
   it('recovers valid history when the menu is corrupt, and vice versa', () => {
     const history = [{ name: '面', at: 1730000000000 }];
     const first = recoverState(JSON.stringify({ version: 1, items: ['面', '面'], history }));
-    expect(first.state.items).toEqual(DEFAULT_ITEMS);
+    expect(first.state.items).toEqual([]);
     expect(first.state.history).toEqual(history);
     expect(first.warning).toBeTruthy();
     const second = recoverState(JSON.stringify({ version: 1, items: ['饭'], history: 'oops' }));
@@ -50,7 +51,7 @@ describe('remember choices in this browser', () => {
   });
   it('allows blocked storage without disabling the app', () => {
     const blocked = { getItem: () => { throw new Error('denied'); } };
-    expect(readState(blocked).state.items).toEqual(DEFAULT_ITEMS);
+    expect(readState(blocked).state.items).toEqual([]);
     expect(readState(blocked).warning).toBeTruthy();
     expect(saveState({ setItem: () => { throw new Error('quota'); } }, { version: 1, items: ['饭'], history: [] })).toBe(false);
   });

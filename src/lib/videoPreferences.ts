@@ -1,7 +1,7 @@
-import durations from '../data/bilibili-durations.json';
-import type { Video } from '../data/videos';
-import { DURATIONS, type CatalogVideo } from '../shared/contracts';
-import { classifyFoodVideo, FOOD_GROUPS } from './foodGroups';
+import durations from '../data/bilibili-durations.json' with { type: 'json' };
+import type { Video } from '../data/videos.js';
+import { DURATIONS, type CatalogVideo } from '../shared/contracts.js';
+import { classifyFoodVideo, FOOD_GROUPS } from './foodGroups.js';
 
 type WithDuration = Pick<Video, 'url' | 'durationSeconds'>;
 

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
-import { AppError } from '../src/lib/accountRules';
-import { USERNAME_MAX_LENGTH, type AuthIdentity } from '../src/shared/contracts';
-import type { DocumentStore } from './store';
+import { AppError } from '../src/lib/accountRules.js';
+import { USERNAME_MAX_LENGTH, type AuthIdentity } from '../src/shared/contracts.js';
+import type { DocumentStore } from './store.js';
 
 const deriveKey = (password: string, salt: string, length: number) => new Promise<Buffer>((resolve, reject) => {
   scryptCallback(password, salt, length, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (error, key) => error ? reject(error) : resolve(key));

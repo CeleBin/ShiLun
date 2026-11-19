@@ -1,4 +1,4 @@
-import { AppError } from '../src/lib/accountRules';
+import { AppError } from '../src/lib/accountRules.js';
 export interface DocumentStore { get(key: string): Promise<string | null>; compareAndSet(key: string, previous: string | null, next: string): Promise<boolean>; setExpiring?(key: string, value: string, seconds: number): Promise<void>; delete?(key: string): Promise<void>; rateLimit(key: string, limit: number, seconds: number): Promise<boolean> }
 const unavailable = () => new AppError(503, 'STORAGE_UNAVAILABLE', '账户存储暂不可用，请稍后重试。');
 export class RedisStore implements DocumentStore {

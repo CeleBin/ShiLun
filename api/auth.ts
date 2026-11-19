@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { AppError } from '../src/lib/accountRules';
-import { Accounts, normalizeUsername, readSessionCookie, sessionCookie } from '../server/accounts';
-import { sameOrigin } from '../server/auth';
-import { RedisStore } from '../server/store';
+import { AppError } from '../src/lib/accountRules.js';
+import { Accounts, normalizeUsername, readSessionCookie, sessionCookie } from '../server/accounts.js';
+import { sameOrigin } from '../server/auth.js';
+import { RedisStore } from '../server/store.js';
 
 const cookies = (value: string | string[] | undefined) => Array.isArray(value) ? value.join('; ') : value;
 function bodyObject(input: unknown): Record<string, unknown> {

@@ -1,7 +1,7 @@
-import { AppError } from '../src/lib/accountRules';
-import { Accounts, readSessionCookie } from './accounts';
-import { RedisStore } from './store';
-import type { AuthIdentity } from '../src/shared/contracts';
+import { AppError } from '../src/lib/accountRules.js';
+import { Accounts, readSessionCookie } from './accounts.js';
+import { RedisStore } from './store.js';
+import type { AuthIdentity } from '../src/shared/contracts.js';
 
 export async function authenticateIdentity(cookieHeader: string | undefined, env: NodeJS.ProcessEnv): Promise<AuthIdentity | undefined> {
   const session = readSessionCookie(cookieHeader);

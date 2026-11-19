@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sameOrigin } from '../server/auth';
-import { findNearbyFood, validCoordinates } from '../server/nearbyFood';
-import { AppError } from '../src/lib/accountRules';
+import { sameOrigin } from '../server/auth.js';
+import { findNearbyFood, validCoordinates } from '../server/nearbyFood.js';
+import { AppError } from '../src/lib/accountRules.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');

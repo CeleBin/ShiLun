@@ -26,7 +26,9 @@ describe('account boundaries', () => {
     await service.command('alice', { action: 'favorite', url });
     await service.command('alice', { action: 'favorite', url: url.replace('?share_source=copy', '/') });
     expect((await service.account('alice')).favorites).toHaveLength(1);
-    expect((await service.account('bob')).favorites).toHaveLength(0);
+    const bob = await service.account('bob');
+    expect(bob.favorites).toHaveLength(0);
+    expect(bob.wheel).toEqual({ items: [], history: [], revision: 0 });
     expect((await service.account('alice')).submissions).toHaveLength(0);
     await expect(service.admin('alice')).rejects.toMatchObject({ status: 403 });
   });

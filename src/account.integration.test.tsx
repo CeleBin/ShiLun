@@ -145,7 +145,7 @@ it('filters cached store names, keeps other dining last and shows hidden selecti
   expect(dialog.getByRole('checkbox', { name: /兰州拉面/ })).toBeTruthy();
   expect(dialog.queryByRole('checkbox', { name: /重庆小面|火锅/ })).toBeNull();
   expect(dialog.getByText('已选 1 家')).toBeTruthy();
-  expect(dialog.getByText('已选 1 项 · 还可加 7 项')).toBeTruthy();
+  expect(dialog.getByText('已选 1 项 · 还可加 15 项')).toBeTruthy();
   await user.click(dialog.getByRole('button', { name: '折叠面馆店铺' }));
   expect(dialog.queryByRole('checkbox', { name: /兰州拉面/ })).toBeNull();
   expect(dialog.getByText('已选 1 家')).toBeTruthy();
