@@ -1,8 +1,18 @@
 import { AppError } from '../src/lib/accountRules.js';
 export interface DocumentStore { get(key: string): Promise<string | null>; compareAndSet(key: string, previous: string | null, next: string): Promise<boolean>; setExpiring?(key: string, value: string, seconds: number): Promise<void>; delete?(key: string): Promise<void>; rateLimit(key: string, limit: number, seconds: number): Promise<boolean> }
 const unavailable = () => new AppError(503, 'STORAGE_UNAVAILABLE', '账户存储暂不可用，请稍后重试。');
+
+function trimConfigValue(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.replace(/^(["'])(.*)\1$/, '$2').trim();
+}
+
 export class RedisStore implements DocumentStore {
-  constructor(private url: string, private token: string) { if (!url || !token || !/^https:\/\/[a-zA-Z0-9.-]+\.upstash\.io\/?$/.test(url)) throw unavailable(); }
+  constructor(private url: string, private token: string) {
+    this.url = trimConfigValue(url);
+    this.token = trimConfigValue(token);
+    if (!this.token || !/^https:\/\/[a-zA-Z0-9.-]+\.upstash\.io\/?$/.test(this.url)) throw unavailable();
+  }
   private async command(args: unknown[]): Promise<unknown> {
     try { const response = await fetch(this.url, { method: 'POST', headers: { Authorization: `Bearer ${this.token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args), signal: AbortSignal.timeout(5000) }); if (!response.ok) throw unavailable(); const body = await response.json() as { result?: unknown; error?: string }; if (body.error || !('result' in body)) throw unavailable(); return body.result; } catch { throw unavailable(); }
   }

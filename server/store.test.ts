@@ -20,6 +20,17 @@ describe('production configuration and Redis boundary', () => {
     await store.setExpiring('session', 'value', 3600); expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual(['SET', 'session', 'value', 'EX', 3600]);
     await store.delete('session'); expect(JSON.parse(fetcher.mock.calls[3][1].body)).toEqual(['DEL', 'session']);
   });
+  it('accepts environment values pasted with surrounding whitespace or quotes', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: null }) });
+    vi.stubGlobal('fetch', fetcher);
+    const store = new RedisStore('  "https://example.upstash.io/"\r\n', " 'secret'\n");
+
+    expect(await store.get('key')).toBeNull();
+    expect(fetcher).toHaveBeenCalledWith('https://example.upstash.io/', expect.objectContaining({
+      headers: expect.objectContaining({ Authorization: 'Bearer secret' }),
+    }));
+    expect(() => new RedisStore('https://example.upstash.io/path', 'secret')).toThrow();
+  });
   it('converts remote errors into an explicit storage unavailable error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')));
     await expect(new RedisStore('https://example.upstash.io', 'secret').get('key')).rejects.toMatchObject({ status: 503 });
