@@ -23,13 +23,16 @@ export function Wheel({ items, angle, busy, duration }: { items: string[]; angle
           const [x1, y1] = point(start);
           const [x2, y2] = point(end);
           const [tx, ty] = point(middle, count > 10 ? 139 : 129);
+          const labelAngle = middle + 90;
+          const screenAngle = (labelAngle + angle) % 360;
+          const readableAngle = screenAngle > 90 && screenAngle <= 270 ? labelAngle - 180 : labelAngle;
           const max = count > 10 ? 4 : count > 5 ? 6 : 9;
           const letters = characters(name);
           const label = letters.length > max ? `${letters.slice(0, max - 1).join('')}…` : name;
           return <g key={name}>
             <title>{name}</title>
             {count === 1 ? <circle cx="200" cy="200" r="183" fill={COLORS[index]} /> : <path d={`M200 200L${x1} ${y1}A181 181 0 0 1 ${x2} ${y2}Z`} fill={COLORS[index]} stroke="#fff8e9" strokeWidth="2" />}
-            <text x={tx} y={ty} transform={`rotate(${middle + 90},${tx},${ty})`} textAnchor="middle" dominantBaseline="middle" fill="#344a33" fontSize={count > 10 ? 12 : count > 6 ? 14 : 16} fontWeight="600">{label}</text>
+            <text x={tx} y={ty} transform={`rotate(${readableAngle},${tx},${ty})`} textAnchor="middle" dominantBaseline="middle" fill="#344a33" fontSize={count > 10 ? 12 : count > 6 ? 14 : 16} fontWeight="600">{label}</text>
           </g>;
         })}
       </g>

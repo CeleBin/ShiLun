@@ -65,13 +65,17 @@ describe('fair selection and pointer geometry', () => {
   it('rejects invalid choice counts', () => {
     expect(() => uniformIndex(0)).toThrow();
   });
-  it('lands on the selected segment at every menu size and previous angle', () => {
+  it('varies the landing point within the selected segment, including near both edges', () => {
     for (let count = 1; count <= 16; count++) {
       for (let index = 0; index < count; index++) {
         for (const previous of [0, 123.5, 359, 3000]) {
-          const end = targetRotation(index, count, previous);
-          expect(end).toBeGreaterThan(previous + 360 * 4);
-          expect(indexAtPointer(end, count)).toBe(index);
+          const nearStart = targetRotation(index, count, previous, () => 0);
+          const nearEnd = targetRotation(index, count, previous, () => 0xffffffff);
+          expect(nearStart).not.toBe(nearEnd);
+          for (const rotation of [nearStart, nearEnd]) {
+            expect(rotation).toBeGreaterThan(previous + 360 * 4);
+            expect(indexAtPointer(rotation, count)).toBe(index);
+          }
         }
       }
     }

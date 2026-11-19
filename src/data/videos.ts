@@ -6,6 +6,7 @@ export interface Video {
   url: string;
   title: string;
   author: string;
+  durationSeconds?: number;
   reason: string;
   artwork: 'grill' | 'town' | 'pot' | 'bowl' | 'table' | 'steam';
   label: string;

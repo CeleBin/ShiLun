@@ -54,17 +54,22 @@ export function saveState(storage: Pick<Storage, 'setItem'>, state: SavedState):
   try { storage.setItem(STORAGE_KEY, serializeState(state)); return true; } catch { return false; }
 }
 
-export function uniformIndex(count: number, draw = () => crypto.getRandomValues(new Uint32Array(1))[0]): number {
+const UINT32_RANGE = 2 ** 32;
+const drawUint32 = () => crypto.getRandomValues(new Uint32Array(1))[0];
+
+export function uniformIndex(count: number, draw = drawUint32): number {
   if (!Number.isInteger(count) || count < 1 || count > MAX_ITEMS) throw new Error('Invalid menu size');
-  const limit = Math.floor(4294967296 / count) * count;
+  const limit = Math.floor(UINT32_RANGE / count) * count;
   let value: number;
   do { value = draw(); } while (value >= limit);
   return value % count;
 }
 
 const normalize = (angle: number) => ((angle % 360) + 360) % 360;
-export function targetRotation(index: number, count: number, previous: number): number {
-  const target = normalize(-(index + 0.5) * 360 / count);
+export function targetRotation(index: number, count: number, previous: number, draw = drawUint32): number {
+  // Sample inside the sector, including positions just next to either boundary.
+  const offset = (draw() + 0.5) / UINT32_RANGE;
+  const target = normalize(-(index + offset) * 360 / count);
   return previous + 360 * 5 + normalize(target - normalize(previous));
 }
 export function indexAtPointer(rotation: number, count: number): number {

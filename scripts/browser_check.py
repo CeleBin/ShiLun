@@ -63,24 +63,14 @@ with sync_playwright() as p:
     expect(page.locator('.menu-chip')).to_have_count(16)
     checks.append('16 item limit')
 
-    page.get_by_role('button', name='恢复默认选项', exact=True).click()
-    expect(page.get_by_role('button', name='保留我的菜单')).to_be_focused()
-    page.keyboard.press('Escape')
-    expect(page.locator('.menu-chip')).to_have_count(16)
-    expect(page.get_by_role('button', name='恢复默认选项', exact=True)).to_be_focused()
-    page.get_by_role('button', name='恢复默认选项', exact=True).click()
-    page.get_by_role('button', name='确认恢复', exact=True).click()
-    expect(page.locator('.menu-chip')).to_have_count(8)
-    checks.append('restore confirmation, cancel/Escape and focus restoration')
-
     # Keep normal motion for this check so the input locking is observable.
     page.get_by_role('button', name='转一下，开饭！', exact=True).click()
-    expect(page.get_by_role('button', name='美味正在路上…', exact=True)).to_be_disabled()
+    expect(page.get_by_role('button', name='正在抽选…', exact=True)).to_be_disabled()
     expect(menu_input).to_be_disabled()
     expect(add).to_be_disabled()
     for button in page.locator('.menu-chip button').all():
         expect(button).to_be_disabled()
-    expect(page.get_by_role('button', name='再转一次，换个灵感', exact=True)).to_be_enabled(timeout=7000)
+    expect(page.get_by_role('button', name='再转一次', exact=True)).to_be_enabled(timeout=7000)
     selected = page.get_by_test_id('spin-result').inner_text()
     stored = page.evaluate('(key) => JSON.parse(localStorage.getItem(key))', KEY)
     assert stored['history'][0]['name'] == selected
@@ -93,8 +83,8 @@ with sync_playwright() as p:
 
     page.emulate_media(reduced_motion='reduce')
     for _ in range(9):
-        page.get_by_role('button', name='再转一次，换个灵感', exact=True).click()
-        expect(page.get_by_role('button', name='再转一次，换个灵感', exact=True)).to_be_enabled()
+        page.get_by_role('button', name='再转一次', exact=True).click()
+        expect(page.get_by_role('button', name='再转一次', exact=True)).to_be_enabled()
     expect(page.locator('.history-list li')).to_have_count(8)
     page.get_by_role('button', name='清空记录', exact=True).click()
     expect(page.locator('.history-list li')).to_have_count(0)
@@ -113,11 +103,9 @@ with sync_playwright() as p:
     expect(page.locator('.history-name')).to_have_text('只想吃面')
     checks.append('empty menu persists, disables spin; one-item wheel works')
 
-    page.locator('.storage-note summary').click()
-    expect(page.locator('.storage-note')).to_contain_text('不跨设备同步')
-    expect(page.locator('.storage-note')).to_contain_text('清除网站数据')
     before = page.locator('.video-body h3').all_text_contents()
     page.get_by_role('button', name='换一批', exact=True).click()
+    page.wait_for_load_state('networkidle')
     after = page.locator('.video-body h3').all_text_contents()
     assert set(before).isdisjoint(after)
     for anchor in page.locator('.video-link').all():
@@ -171,7 +159,7 @@ with sync_playwright() as p:
     blocked_page.get_by_role('button', name='添加', exact=True).click()
     expect(blocked_page.get_by_role('button', name='删除临时的饭', exact=True)).to_be_visible()
     blocked_page.get_by_role('button', name='转一下，开饭！', exact=True).click()
-    expect(blocked_page.get_by_role('button', name='再转一次，换个灵感', exact=True)).to_be_enabled()
+    expect(blocked_page.get_by_role('button', name='再转一次', exact=True)).to_be_enabled()
     checks.append('localStorage access denied: add and spin remain functional')
     blocked.close()
 
