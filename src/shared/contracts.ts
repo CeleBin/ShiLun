@@ -23,7 +23,7 @@ export interface Favorite { key: string; url: string; title: string; at: number;
 export interface Draw extends HistoryEntry { id: string; items?: string[] }
 export interface WheelData { items: string[]; history: Draw[]; revision: number }
 export interface Submission { id: string; userId: string; url: string; reason: string; status: 'pending' | 'approved' | 'rejected'; reply: string; at: number; reviewedBy?: string; reviewedAt?: number; videoId?: string; video?: Pick<Favorite, 'title' | 'author' | 'durationSeconds' | 'coverUrl'> }
-export interface Feedback { id: string; userId: string; kind: '问题' | '建议' | '功能' | '视频失效'; text: string; videoId?: string; status: 'open' | 'processing' | 'resolved'; reply: string; at: number; handledBy?: string; handledAt?: number }
+export interface Feedback { id: string; userId: string | null; kind: '问题' | '建议' | '功能' | '视频失效'; text: string; videoId?: string; status: 'open' | 'processing' | 'resolved'; reply: string; at: number; handledBy?: string; handledAt?: number }
 export interface Account {
   userId: string;
   wheel: WheelData;

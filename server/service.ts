@@ -122,8 +122,25 @@ export class Service {
     const eligible = g.videos.filter(video => video.published && p.interests[video.id] !== 'hide').length;
     return { videos, requestId, strategy: STRATEGY, hasMore: eligible > videos.length };
   }
-  async command(userId: string, raw: unknown): Promise<Account | AdminData | PreferenceUpdate | { ok: true }> {
+  async command(userId: string | null, raw: unknown): Promise<Account | AdminData | PreferenceUpdate | { ok: true }> {
     const c: Command = validateCommand(raw); const now = Date.now();
+    if (c.action === 'feedback') {
+      const key = `${userId === null ? 'guest' : digest(userId)}:feedback:${c.operationId}`;
+      const hash = digest(stableJson(c));
+      await this.update(GLOBAL, newModeration, g => {
+        if (g.operations[key]) {
+          if (g.operations[key] !== hash) throw conflict('重试标识已经用于不同内容。');
+          return;
+        }
+        if (c.videoId && !g.videos.some(v => v.id === c.videoId)) throw new AppError(400, 'UNKNOWN_VIDEO', '未找到这个视频。');
+        if (Object.keys(g.operations).length >= 5000 || g.feedback.length >= 2000
+          || (userId !== null && g.feedback.filter(f => f.userId === userId).length >= 100)) throw capacity();
+        g.feedback.push({ id: randomUUID(), userId, kind: c.kind, text: c.text, videoId: c.videoId, at: now, status: 'open', reply: '' });
+        g.operations[key] = hash;
+      });
+      return userId === null ? { ok: true } : this.account(userId);
+    }
+    if (userId === null) throw new AppError(401, 'UNAUTHORIZED', '请先登录。');
     if (c.action === 'favorite') return this.setFavorite(userId, c, now);
     if (c.action === 'preferences') {
       const preferences = selectDurationPreferences(c.tags);
@@ -136,7 +153,7 @@ export class Service {
       await this.update(profileKey(userId), newProfile, p => { const blank = newProfile(); blank.wheel.revision = p.wheel.revision + 1; Object.assign(p, blank); });
       return this.account(userId);
     }
-    if (['submit', 'feedback', 'review', 'video', 'createVideo', 'handleFeedback'].includes(c.action)) {
+    if (['submit', 'review', 'video', 'createVideo', 'handleFeedback'].includes(c.action)) {
       let submissionLookup: Promise<BilibiliMetadata | undefined> | undefined;
       let tagsLookup: Promise<string[] | undefined> | undefined;
       const sourceTags = (key: string) => {
@@ -144,7 +161,7 @@ export class Service {
         return tagsLookup;
       };
       await this.update(GLOBAL, newModeration, async g => {
-        if (c.action === 'submit' || c.action === 'feedback' || c.action === 'createVideo') {
+        if (c.action === 'submit' || c.action === 'createVideo') {
           const key = `${digest(userId)}:${c.action}:${c.operationId}`; const hash = digest(stableJson(c));
           if (g.operations[key]) { if (g.operations[key] !== hash) throw conflict('重试标识已经用于不同内容。'); return; }
           if (Object.keys(g.operations).length >= 5000) throw capacity();
@@ -157,10 +174,6 @@ export class Service {
             if (bvid.startsWith('BV')) submissionLookup ??= this.lookupVideo?.(bvid);
             const video = await submissionLookup;
             g.submissions.push({ id: randomUUID(), userId, url: normalized.url, reason: c.reason, at: now, status: 'pending', reply: '', video });
-          } else if (c.action === 'feedback') {
-            if (c.videoId && !g.videos.some(v => v.id === c.videoId)) throw new AppError(400, 'UNKNOWN_VIDEO', '未找到这个视频。');
-            if (g.feedback.length >= 2000 || g.feedback.filter(f => f.userId === userId).length >= 100) throw capacity();
-            g.feedback.push({ id: randomUUID(), userId, kind: c.kind, text: c.text, videoId: c.videoId, at: now, status: 'open', reply: '' });
           } else {
             const normalized = normalizeVideoUrl(c.url); if (g.videos.some(v => canonicalId(v.url) === normalized.key)) throw conflict('这个视频已经收录。');
             if (g.videos.length >= 500) throw capacity();

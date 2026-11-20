@@ -299,6 +299,7 @@ a.favorite-video-link:hover strong {
   font-variant-numeric: tabular-nums;
 }
 .video-card {
+  position: relative;
   display: flex;
   flex-direction: column;
 }
@@ -340,13 +341,22 @@ a.favorite-video-link:hover strong {
 }
 
 
-.video-submit-button {
-  padding-inline: 8px;
+.video-submit-button,
+.footer-feedback {
+  padding: 8px 12px;
+  border: 1px solid #dce3d1;
+  border-radius: 20px;
+  background: #eef2e5;
+  color: var(--green);
+}
+
+.video-submit-button:hover,
+.footer-feedback:hover {
+  background: #e6ecdc;
 }
 
 .footer-feedback {
   margin-inline-start: auto;
-  padding-block: 8px;
 }
 
 @media (max-width: 690px) {

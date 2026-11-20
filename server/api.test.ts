@@ -21,6 +21,30 @@ describe('API public fallback and authentication', () => {
     await handler({ method: 'POST', query: {}, headers: { 'content-type': 'application/json', 'content-length': '999999' }, body: {} } as unknown as VercelRequest, res as unknown as VercelResponse);
     expect(res.statusCode).toBe(413);
   });
+  it('accepts only same-origin feedback from guests and keeps retries idempotent', async () => {
+    vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://example.upstash.io');
+    vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'secret');
+    let catalog: string | null = null;
+    vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
+      const command = JSON.parse(init.body as string);
+      if (command[0] === 'GET') return Response.json({ result: catalog });
+      if (command[0] === 'EVAL' && command.includes('shilun:v2:moderation')) catalog = command.at(-1);
+      return Response.json({ result: 1 });
+    }));
+    const submit = async (body: object, origin = 'https://shilun.cbnb.online') => {
+      const res = response();
+      await handler({ method: 'POST', query: { action: 'feedback' }, body,
+        headers: { 'content-type': 'application/json', origin, host: 'shilun.cbnb.online' },
+      } as unknown as VercelRequest, res as unknown as VercelResponse);
+      return res;
+    };
+    const body = { action: 'feedback', kind: '建议', text: '希望可以收藏菜单', operationId: 'guest-test' };
+    expect((await submit(body, 'https://other.example')).statusCode).toBe(403);
+    expect((await submit({ action: 'deleteAccountData' })).statusCode).toBe(401);
+    expect((await submit(body)).body).toEqual({ ok: true });
+    expect((await submit(body)).body).toEqual({ ok: true });
+    expect(JSON.parse(catalog!).feedback).toEqual([expect.objectContaining({ userId: null, text: body.text })]);
+  });
   it('returns an empty publication-safe fallback when configured Redis is offline', async () => {
     vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://example.upstash.io'); vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'secret'); vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     const res = response();

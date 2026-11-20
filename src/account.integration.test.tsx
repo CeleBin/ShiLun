@@ -40,6 +40,7 @@ beforeEach(() => {
       return account ? result(account) : result({ error: '请登录' }, 401);
     }
     const command: Command = JSON.parse(init.body as string); commands.push(command);
+    if (!account && parsed.searchParams.get('action') === 'feedback' && command.action === 'feedback') return result({ ok: true });
     if (!account) return result({ error: '请登录' }, 401);
     if (command.action === 'event') return result({ ok: true });
     if ((command.action === 'favorite' || command.action === 'interest') && videoWriteGate && !(await videoWriteGate)) return result({ error: '保存失败，请重试。' }, 503);
@@ -290,15 +291,26 @@ it('submits to the review queue and sends feedback through the site entry', asyn
   expect(accounts.A.feedback[0].videoId).toBeUndefined();
 });
 
-it.each([['投稿', '我的投稿'], ['意见反馈', '我的反馈']])('opens %s after signing in', async (label, section) => {
+it('lets a guest submit feedback without opening sign-in', async () => {
+  const user = userEvent.setup();
+  mount(profile(null));
+  await user.click(screen.getByRole('button', { name: '意见反馈' }));
+  const dialog = within(screen.getByRole('dialog', { name: '意见反馈' }));
+  await user.type(dialog.getByRole('textbox', { name: '具体说明' }), '希望可以收藏菜单');
+  await user.click(dialog.getByRole('button', { name: '发送反馈' }));
+  expect(await dialog.findByText('反馈已提交。')).toBeTruthy();
+  expect(commands).toContainEqual(expect.objectContaining({ action: 'feedback', text: '希望可以收藏菜单' }));
+});
+
+it('opens the submissions panel after signing in', async () => {
   const user = userEvent.setup();
   const view = mount(profile(null));
   try {
-    await user.click(screen.getByRole('button', { name: label }));
+    await user.click(screen.getByRole('button', { name: '投稿' }));
     expect(screen.getByRole('dialog', { name: '登录 ShiLun' })).toBeTruthy();
     view.rerender(<IdentityContext.Provider value={profile('A')}><App /></IdentityContext.Provider>);
     const dialog = await screen.findByRole('dialog', { name: '我的账户' });
-    expect(within(dialog).getByRole('region', { name: section })).toBeTruthy();
+    expect(within(dialog).getByRole('region', { name: '我的投稿' })).toBeTruthy();
   } finally {
     window.history.replaceState(null, '', location.pathname);
   }

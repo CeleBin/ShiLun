@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { addItem, defaultState, readState, saveState, targetRotation, uniformIndex, type Recovery } from './lib/domain';
 import { sameWheel } from './lib/cloudWheel';
-import { ApiError } from './lib/api';
+import { api, ApiError } from './lib/api';
 import { Icon } from './components/Icons';
 import { Wheel } from './components/Wheel';
 import { Menu } from './components/Menu';
@@ -9,7 +9,7 @@ import { History } from './components/History';
 import { Videos } from './components/Videos';
 import { useIdentity } from './auth/Identity';
 import { useAccount } from './hooks/useAccount';
-import AccountPanel from './components/AccountPanel';
+import AccountPanel, { GuestFeedbackPanel } from './components/AccountPanel';
 import AdminPanel from './components/AdminPanel';
 import AuthPanel from './components/AuthPanel';
 import type { Account, Command, Draw, WheelData } from './shared/contracts';
@@ -51,6 +51,7 @@ function Experience() {
   const [reportVideo, setReportVideo] = useState('');
   const [panel, setPanel] = useState<AccountEntry | 'admin' | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
+  const [guestFeedbackOpen, setGuestFeedbackOpen] = useState(false);
   const [angle, setAngle] = useState(0);
   const [duration, setDuration] = useState(4200);
   const [result, setResult] = useState('');
@@ -162,6 +163,7 @@ function Experience() {
       if (cloud.error && !cloud.account) setNotice('账户内容暂未加载，请点击重新读取。');
       return;
     }
+    if (entry === '反馈') { setGuestFeedbackOpen(true); return; }
     if (identity.configured) window.history.replaceState(null, '', accountHashes[entry]);
     askLogin();
   }
@@ -272,6 +274,8 @@ function Experience() {
     </footer>
     {panel && panel !== 'admin' && cloud.account && <AccountPanel initialTab={panel} initialVideoId={reportVideo} account={cloud.account} command={accountCommand} onClose={() => setPanel(null)} />}
     {panel === 'admin' && cloud.admin && <AdminPanel data={cloud.admin} command={cloud.command} reload={cloud.loadAdmin} onClose={() => setPanel(null)} />}
+    {guestFeedbackOpen && <GuestFeedbackPanel send={command => api('feedback', identity.getToken, command)}
+      onClose={() => setGuestFeedbackOpen(false)} />}
     {authOpen && <AuthPanel onClose={() => {
       if (accountEntry(location.hash)) historyReplace();
       setAuthOpen(false);

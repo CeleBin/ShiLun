@@ -23,7 +23,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (Number(req.headers['content-length'] ?? 0) > 32768 || Buffer.byteLength(typeof req.body === 'string' ? req.body : JSON.stringify(req.body ?? null)) > 32768) throw new AppError(413, 'TOO_LARGE', '提交内容过大。');
       if (!sameOrigin(req.headers.origin, req.headers['x-forwarded-host'] ?? req.headers.host, req.headers['x-forwarded-proto'])) throw new AppError(403, 'ORIGIN_FORBIDDEN', '请求来源不受信任。');
     }
-    if (!userId && !(req.method === 'GET' && action === 'recommendations')) {
+    const guestFeedback = !userId && req.method === 'POST' && action === 'feedback';
+    if (!userId && !guestFeedback && !(req.method === 'GET' && action === 'recommendations')) {
       if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) throw new AppError(503, 'AUTH_NOT_CONFIGURED', '账号服务尚未配置，请联系维护者。');
       throw new AppError(401, 'UNAUTHORIZED', '请先登录。');
     }
@@ -43,6 +44,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     catch (error) { if (!userId && req.method === 'GET' && action === 'recommendations') return res.status(200).json(publicFallback()); throw error; }
     try {
       if (userId) await service.limit(userId);
+      else if (guestFeedback) {
+        const ip = String(req.headers['x-vercel-forwarded-for'] ?? req.socket?.remoteAddress ?? 'unknown').split(',')[0].trim();
+        await service.limit(`guest-feedback:${ip}`, 5);
+      }
       else await service.limit('public:' + (req.socket?.remoteAddress ?? 'unknown'), 120);
     } catch (error) {
       if (!userId && action === 'recommendations' && error instanceof AppError && error.status === 503) return res.status(200).json(publicFallback());
@@ -59,7 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     let body: unknown = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch { throw new AppError(400, 'INVALID_JSON', '提交内容无法解析。'); } }
-    return res.status(200).json(await service.command(userId!, body));
+    return res.status(200).json(await service.command(userId ?? null, body));
   } catch (error) {
     if (error instanceof AppError) return res.status(error.status).json({ error: error.message, code: error.code });
     console.error('ShiLun API failed', error instanceof Error ? error.name : 'unknown');

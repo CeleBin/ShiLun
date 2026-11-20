@@ -73,6 +73,43 @@ const date = (at: number) => new Date(at).toLocaleString('zh-CN');
 const submissionStatus = { pending: '待审核', approved: '已收录', rejected: '未通过' };
 const feedbackStatus = { open: '待处理', processing: '处理中', resolved: '已处理' };
 
+function FeedbackFields({ kind, text, onKind, onText }: {
+  kind: Feedback['kind']; text: string; onKind: (value: Feedback['kind']) => void; onText: (value: string) => void;
+}) {
+  return <>
+    <label>反馈类型<select value={kind} onChange={event => onKind(event.target.value as Feedback['kind'])}>
+      {(['问题', '建议', '功能', '视频失效'] as const).map(value => <option key={value}>{value}</option>)}
+    </select></label>
+    <label>具体说明<textarea required maxLength={2000} value={text} onChange={event => onText(event.target.value)} /></label>
+  </>;
+}
+
+export function GuestFeedbackPanel({ send, onClose }: {
+  send: (command: Extract<Command, { action: 'feedback' }>) => Promise<unknown>; onClose: () => void;
+}) {
+  const [kind, setKind] = useState<Feedback['kind']>('建议');
+  const [text, setText] = useState('');
+  const operation = useRef('');
+  const { pending, run, notice } = usePanelAction();
+
+  return <AccountDialog title="意见反馈" onClose={onClose} compact>
+    {notice}
+    <form className="account-form" onSubmit={event => {
+      event.preventDefault();
+      operation.current ||= crypto.randomUUID();
+      void run(() => send({ action: 'feedback', kind, text: text.trim(), operationId: operation.current }),
+        '反馈已提交。', () => { setText(''); operation.current = ''; });
+    }}>
+      <fieldset disabled={pending}>
+        <FeedbackFields kind={kind} text={text}
+          onKind={value => { setKind(value); operation.current = ''; }}
+          onText={value => { setText(value); operation.current = ''; }} />
+        <button className="account-primary" disabled={!text.trim()}>{pending ? '正在提交…' : '发送反馈'}</button>
+      </fieldset>
+    </form>
+  </AccountDialog>;
+}
+
 function AccountVideoRow({ video, status, action, details }: {
   video: { url: string; title: string; author?: string; durationSeconds?: number; coverUrl?: string };
   status?: ReactNode;
@@ -179,7 +216,13 @@ export default function AccountPanel({ account, command, onClose, initialTab = '
       </section>}
       {tab === '反馈' && <section aria-label="我的反馈"><p className="account-description">遇到了问题，或有新的点子？处理进度和回复会留在这里。</p>
         <form className="account-form" onSubmit={event => { event.preventDefault(); feedbackOperation.current ||= crypto.randomUUID(); void run(() => command({ action: 'feedback', kind, text: text.trim(), videoId: videoId.trim() || undefined, operationId: feedbackOperation.current }), '反馈已提交。', () => { setText(''); setVideoId(''); feedbackOperation.current = ''; }); }}>
-          <fieldset disabled={pending}><label>反馈类型<select value={kind} onChange={event => { setKind(event.target.value as Feedback['kind']); feedbackOperation.current = ''; }}>{(['问题', '建议', '功能', '视频失效'] as const).map(value => <option key={value}>{value}</option>)}</select></label><label>具体说明<textarea required maxLength={2000} value={text} onChange={event => { setText(event.target.value); feedbackOperation.current = ''; }} /></label><label>视频编号（选填）<input maxLength={120} value={videoId} onChange={event => { setVideoId(event.target.value); feedbackOperation.current = ''; }} placeholder="也可以把视频链接贴在具体说明里" /></label><button className="account-primary">{pending ? '正在提交…' : '发送反馈'}</button></fieldset>
+          <fieldset disabled={pending}>
+            <FeedbackFields kind={kind} text={text}
+              onKind={value => { setKind(value); feedbackOperation.current = ''; }}
+              onText={value => { setText(value); feedbackOperation.current = ''; }} />
+            <label>视频编号（选填）<input maxLength={120} value={videoId} onChange={event => { setVideoId(event.target.value); feedbackOperation.current = ''; }} placeholder="也可以把视频链接贴在具体说明里" /></label>
+            <button className="account-primary">{pending ? '正在提交…' : '发送反馈'}</button>
+          </fieldset>
         </form>
         <ul className="account-records">{account.feedback.map(item => <li key={item.id}><div className="account-record-head"><h3>{item.kind}</h3><span className="account-badge">{feedbackStatus[item.status]}</span></div><p>{item.text}</p>{item.videoId && <p className="account-meta">视频编号：{item.videoId}</p>}{item.reply && <p className="account-reply">处理回复：{item.reply}</p>}<p className="account-meta">{date(item.at)}</p></li>)}</ul>{!account.feedback.length && <p className="account-empty">暂时没有反馈记录。</p>}
       </section>}
