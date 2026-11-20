@@ -66,6 +66,19 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function loaded() { await screen.findByRole('button', { name: '删除A的面' }); }
 const mount = (identity: Identity) => render(<IdentityContext.Provider value={identity}><App /></IdentityContext.Provider>);
 
+it('adds the example only when the menu input is empty', async () => {
+  const user = userEvent.setup();
+  mount(profile(null));
+  const add = screen.getByRole('button', { name: '添加' });
+  await user.click(add);
+  expect(screen.getByRole('button', { name: '删除番茄炒蛋' })).toBeTruthy();
+  await user.click(add);
+  expect(screen.getAllByRole('button', { name: '删除番茄炒蛋' })).toHaveLength(1);
+  await user.type(screen.getByRole('textbox', { name: '想吃什么' }), '酸菜鱼');
+  await user.click(add);
+  expect(JSON.parse(localStorage.getItem(KEY)!).items).toEqual(['番茄炒蛋', '酸菜鱼']);
+});
+
 it('caches nearby categories, stores and selections across page loads and only refreshes on request', async () => {
   const user = userEvent.setup();
   const getCurrentPosition = vi.fn((success: PositionCallback) => success({ coords: { longitude: 116.391, latitude: 39.907 } } as GeolocationPosition));

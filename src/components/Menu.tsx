@@ -4,6 +4,8 @@ import { NearbyFoodPicker } from './NearbyFoodPicker';
 import { COLORS } from './Wheel';
 import { MAX_ITEMS } from '../lib/domain';
 
+const EXAMPLE_ITEM = '番茄炒蛋';
+
 interface Props {
   items: string[]; busy: boolean; sync?: ReactNode; onAdd: (input: string) => string;
   onAddNearby: (items: readonly string[]) => string; onRemove: (index: number) => void;
@@ -15,7 +17,7 @@ export function Menu({ items, busy, sync, onAdd, onAddNearby, onRemove }: Props)
   function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
-    const error = onAdd(input);
+    const error = onAdd(input || EXAMPLE_ITEM);
     setFeedback(error);
     if (!error) setInput('');
     inputRef.current?.focus();
@@ -29,7 +31,7 @@ export function Menu({ items, busy, sync, onAdd, onAddNearby, onRemove }: Props)
       </div>
     </div>
     <form className="add-form" onSubmit={submit}>
-      <input ref={inputRef} aria-label="想吃什么" aria-describedby="menu-feedback" placeholder="比如：番茄炒蛋" autoComplete="off" maxLength={512} value={input} disabled={busy} onChange={(event) => { setInput(event.target.value); setFeedback(''); }} />
+      <input ref={inputRef} aria-label="想吃什么" aria-describedby="menu-feedback" placeholder={`比如：${EXAMPLE_ITEM}`} autoComplete="off" maxLength={512} value={input} disabled={busy} onChange={(event) => { setInput(event.target.value); setFeedback(''); }} />
       <button className="add-button" disabled={busy} type="submit"><Icon name="plus" size={16} />添加</button>
     </form>
     <p className="form-feedback" id="menu-feedback" role="status">{feedback}</p>
