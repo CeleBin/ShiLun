@@ -121,15 +121,27 @@ with sync_playwright() as p:
     # Restore a clean view and inspect every required width.
     page.evaluate('(key) => localStorage.removeItem(key)', KEY)
     page.reload()
-    for width in [375, 768, 1440]:
+    for width in [320, 375, 430, 768, 1440]:
         page.set_viewport_size({'width': width, 'height': 900})
+        expect(page.locator('.video-card')).to_have_count(6)
         assert not page.evaluate('document.documentElement.scrollWidth > innerWidth'), width
         expect(page.get_by_role('button', name='先添加想吃的吧', exact=True)).to_be_disabled()
+        title = page.locator('#videos-title').bounding_box()
+        next_batch = page.get_by_role('button', name='换一批', exact=True).bounding_box()
+        assert abs((title['y'] + title['height'] / 2) - (next_batch['y'] + next_batch['height'] / 2)) < 4, width
+        card = page.locator('.video-card').first
+        cover = card.locator('.video-cover').bounding_box()
+        body = card.locator('.video-body').bounding_box()
+        if width <= 690:
+            assert cover['width'] < card.bounding_box()['width'] * 0.45, width
+            assert body['x'] >= cover['x'] + cover['width'], width
+        else:
+            assert body['y'] >= cover['y'] + cover['height'], width
         if width == 375:
             page.screenshot(path=str(output / 'shilun-mobile.png'), full_page=True)
         if width == 768:
             page.screenshot(path=str(output / 'shilun-tablet.png'), full_page=True)
-    checks.append('375/768/1440 layouts without horizontal overflow')
+    checks.append('compact phone video cards and same-row controls, desktop cards remain vertical')
 
     page.evaluate('(key) => localStorage.setItem(key, "{")', KEY)
     page.reload()

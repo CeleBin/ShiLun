@@ -141,7 +141,10 @@ export function Videos({ account, getToken, command, onLogin, onAccount, onSubmi
   const batchHidden = result.videos.length > 0 && result.videos.every(video => interestFor(video.id) === 'hide');
   return <section className="videos-section" aria-labelledby="videos-title" id="videos">
     <div className="section-heading">
-      <div><h2 id="videos-title">饭有了，配点<span>好看的。</span></h2></div>
+      <div><h2 id="videos-title">
+        <span className="video-heading-desktop">饭有了，配点<span>好看的。</span></span>
+        <span className="video-heading-mobile">下饭视频</span>
+      </h2></div>
       <div className="video-heading-actions">
         <button type="button" className="text-button video-submit-button" onClick={onSubmitVideo}>投稿</button>
         <button className="batch-button" onClick={() => onAccount()}>我的收藏</button>
