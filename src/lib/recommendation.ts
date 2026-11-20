@@ -1,8 +1,9 @@
 import { RECOMMENDATION_BATCH_SIZE, selectDurationPreferences, type CatalogVideo, type Recommendation } from '../shared/contracts.js';
 import { durationTag, foodGroupFor } from './videoPreferences.js';
 
-export const STRATEGY = 'behavior-tag-matches-v7';
+export const STRATEGY = 'behavior-tag-matches-v8';
 const DURATION_MATCH_BONUS = 2;
+const HIDE_WEIGHT = -0.5;
 
 const aliases = new Map([
   ['美食探店', '探店'], ['探店小吃', '探店'], ['餐厅探店', '探店'],
@@ -44,14 +45,15 @@ function buildInterests(videos: CatalogVideo[], interests: Record<string, 'like'
   }
   const totals = new Map<string, number>();
   for (const [id, tags] of tagsByVideo) {
-    if (interests[id] === 'hide') continue;
+    const hidden = interests[id] === 'hide';
     const liked = interests[id] === 'like';
-    const weight = favorites.has(id) ? (liked ? 2 : 1.5) : (liked ? 1 : 0);
+    const weight = hidden ? HIDE_WEIGHT : favorites.has(id) ? (liked ? 2 : 1.5) : (liked ? 1 : 0);
     if (!weight) continue;
-    const groups = groupsByVideo.get(id) ?? [];
+    const groups = (groupsByVideo.get(id) ?? []).filter(tag => !hidden || tag !== '美食');
     const weighted = tags.flatMap(tag => {
       const frequency = frequencies.get(tag) ?? 0;
-      return !groups.includes(tag) && sharedTags.has(tag) ? [{ tag, weight: 1 / Math.sqrt(frequency) }] : [];
+      return !groups.includes(tag) && (!hidden || tag !== '美食') && sharedTags.has(tag)
+        ? [{ tag, weight: 1 / Math.sqrt(frequency) }] : [];
     });
     const groupWeight = groups.length ? (weighted.length ? weight / 2 : weight) : 0;
     for (const group of groups) totals.set(group, (totals.get(group) ?? 0) + groupWeight / groups.length);
@@ -60,7 +62,7 @@ function buildInterests(videos: CatalogVideo[], interests: Record<string, 'like'
       totals.set(entry.tag, (totals.get(entry.tag) ?? 0) + (weight - groupWeight) * entry.weight / totalWeight);
     }
   }
-  const scores = new Map([...totals].map(([tag, value]) => [tag, Math.log2(1 + value)]));
+  const scores = new Map([...totals].map(([tag, value]) => [tag, Math.sign(value) * Math.log2(1 + Math.abs(value))]));
   return { tagsByVideo, scores };
 }
 
@@ -74,11 +76,14 @@ export function recommend(
   const { tagsByVideo, scores } = buildInterests(published, interests, favorites, foodGroups);
   const durationPreferences = new Set(selectDurationPreferences(preferences));
   const candidates = published.filter(video => interests[video.id] !== 'hide' && !excluded.has(video.id)).map(video => {
-    const related = (tagsByVideo.get(video.id) ?? []).flatMap(tag => {
+    const matches = (tagsByVideo.get(video.id) ?? []).flatMap(tag => {
       const score = scores.get(tag);
       return score ? [{ tag, score }] : [];
-    }).sort((a, b) => b.score - a.score).slice(0, 2);
-    const behaviorScore = (related[0]?.score ?? 0) + (related[1]?.score ?? 0) * 0.5;
+    }).sort((a, b) => b.score - a.score);
+    const related = matches.filter(entry => entry.score > 0).slice(0, 2);
+    const penalties = matches.filter(entry => entry.score < 0).slice(-2).reverse();
+    const behaviorScore = (related[0]?.score ?? 0) + (related[1]?.score ?? 0) * 0.5
+      + (penalties[0]?.score ?? 0) + (penalties[1]?.score ?? 0) * 0.5;
     const duration = durationPreferences.size ? durationTag(video) : undefined;
     const durationMatch = duration !== undefined && durationPreferences.has(duration) ? duration : undefined;
     const score = behaviorScore + (durationMatch ? DURATION_MATCH_BONUS : 0);
@@ -98,11 +103,11 @@ export function recommend(
     const pool = preferred.length ? preferred : candidates;
     const selected = pool.find(candidate => !authors.has(candidate.video.author)) ?? pool[0];
     candidates.splice(candidates.indexOf(selected), 1);
-    const { video, related, durationMatch } = selected;
+    const { video, related, behaviorScore, durationMatch } = selected;
     diversifyDuration &&= !!durationMatch;
     authors.add(video.author);
     const recommendationReason = durationMatch ? `符合你的时长偏好：${durationMatch}`
-      : related.length ? `与你喜欢或收藏的视频共享标签：${related.map(entry => entry.tag).join('、')}` : '编辑精选，尝试不同内容';
+      : behaviorScore > 0 ? `与你喜欢或收藏的视频共享标签：${related.map(entry => entry.tag).join('、')}` : '编辑精选，尝试不同内容';
     result.push({ ...video, recommendationReason });
   }
   return result;

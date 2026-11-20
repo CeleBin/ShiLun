@@ -280,6 +280,23 @@ describe('account boundaries', () => {
     expect(picks[0].recommendationReason).toMatch(/探店试吃|烹饪制作|美食/);
   });
 
+  it('demotes shared tags and specific food groups until the hide mark is removed', () => {
+    const base = { url, reason: 'r', artwork: 'pot' as const, label: '精选', source: url, verifiedAt: '2026-11-11', tags: ['美食'], published: true };
+    const catalog = [
+      { id: 'a', title: '逛夜市吃小吃', sourceTags: ['街头小吃'] },
+      { id: 'b', title: '探店试吃', sourceTags: ['街头小吃'] },
+      { id: 'c', title: '一道简单家常菜', sourceTags: ['菜谱'] },
+      { id: 'hidden', title: '路边摊10元小面', sourceTags: ['街边小吃'] },
+    ].map(video => ({ ...base, ...video, author: video.id }));
+    const next = (interests: Record<string, 'like' | 'hide'>) => recommend(catalog, [], interests, [], 4);
+
+    expect(next({}).map(video => video.id)).toEqual(['a', 'b', 'c', 'hidden']);
+    const picks = next({ hidden: 'hide' });
+    expect(picks.map(video => video.id)).toEqual(['c', 'a', 'b']);
+    expect(picks[1].recommendationReason).toBe('编辑精选，尝试不同内容');
+    expect(next({}).map(video => video.id)).toEqual(['a', 'b', 'c', 'hidden']);
+  });
+
   it('leaves ambiguous search matches out of the food groups', () => {
     expect(classifyFoodVideo('沉浸式摆摊卖一元烤肠', ['街头美食'])).toBeUndefined();
     expect(classifyFoodVideo('逛吃夜市，家常菜菜谱', [])).toBeUndefined();
